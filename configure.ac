@@ -35,6 +35,11 @@ AC_CHECK_HEADERS([unistd.h])
 # Check for CUDA
 AX_CHECK_CUDA
 
+# Personalize the installation prefix
+AC_ARG_WITH(prefix,
+[AS_HELP_STRING([--prefix=PATH],
+                [specify prefix directory where to install the library])])
+                
 # Boost is no longer required
 AX_BOOST_BASE([1.59], [], [ AC_MSG_ERROR([Boost library not found])])
 
@@ -54,8 +59,6 @@ AS_CASE([$host],
 AS_IF([test "$ARCH" = "x86_64"],[
   AC_DEFINE([X86_64_ARCH],[1],[Compiling for x86_64 host])
 ])
-
-AX_VAR_PUSHVALUE([prefix],[/gpfs/scratch/bsc15/bsc15963/tacuda_proj])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
