@@ -40,7 +40,7 @@ tacudaFinalize();
 
 //! \brief Initialization of the pool of streams
 //!
-//! Initlializes the pool of stream with count asynchronous stream
+//! Initilializes the pool of stream with count streams
 cudaError_t
 tacudaCreateStreams(size_t count);
 
@@ -69,8 +69,8 @@ tacudaSynchronizeStreamAsync(cudaStream_t stream);
 //! The following four functions are wrapper functions for some CUDA asynchronous operations.
 //! Apart form their standard behaviour, they also return a TACUDA request.
 //! 	- If the request pointer parameter is not NULL, TACUDA generates a tacudaRequest and saves a
-//! 	pointer to it in the output parameter after executing the corresponding operation
-//! 	- If the parameter is NULL, TACUDA directly binds the desired operation to the calling task without generating any request
+//! 	pointer to it in the output parameter after executing the corresponding operation.
+//! 	- If the parameter is NULL, TACUDA directly binds the desired operation to the calling task without generating any request.
 
 //! \brief Copying of data between host and device
 //!
