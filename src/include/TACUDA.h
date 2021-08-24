@@ -40,7 +40,7 @@ tacudaFinalize();
 
 //! \brief Initialization of the pool of streams
 //!
-//! Initilializes the pool of stream with count streams
+//! Initializes the pool of stream with count streams
 cudaError_t
 tacudaCreateStreams(size_t count);
 
