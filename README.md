@@ -60,10 +60,9 @@ Once TACUDA is built and installed, e.g, in $TACUDA_HOME, the installation folde
 ## Requirements
 In order to install the TACUDA library, the main requirements are the following:
 
-- Automake, autoconf, libtool, make and a C and C++ compiler.
-- CUDA, including the Runtime, Driver and cuBLAS APIs (with a version compatible with the compiler version).
-- Boost library 1.59 or greater
-- OmpSs-2 (version 2018.11 or greater)
-- ...
+* automake, autoconf, libtool, make and a C and C++ compiler
+* [CUDA](https://docs.nvidia.com/cuda), including the runtime, driver and cuBLAS APIs (the version should be compatible with the compiler version)
+* [boost](http://boost.org) >= 1.59
+* [OmpSs-2](https://github.com/bsc-pm/ompss-2-releases) (version 2020.11 or greater)
 
 The cuBLAS API is not essential to the library, so if the user does the proper changes to the Makefile.am file (basically removing or commenting all the lines containing `src/c/cuBLASOperations.cpp` and a few compiler flags) it can be compiled and installed without it.
