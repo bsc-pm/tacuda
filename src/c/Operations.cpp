@@ -1,7 +1,7 @@
 /*
 	This file is part of Task-Aware CUDA and is licensed under the terms contained in the COPYING and COPYING.LESSER files.
 
-	Copyright (C) 2021 Barcelona Supercomputing Center (BSC)
+	Copyright (C) 2021-2023 Barcelona Supercomputing Center (BSC)
 */
 
 #include <cuda_runtime.h>
@@ -19,13 +19,13 @@ extern "C" {
 
 cudaError_t
 tacudaLaunchKernel(
-    const void* func, dim3 gridDim, dim3 blockDim, 
+    const void* func, dim3 gridDim, dim3 blockDim,
     void** args, size_t sharedMem, cudaStream_t stream,
     tacudaRequest *requestPtr)
 {
 
 	cudaError_t eret;
-    
+
 	eret = cudaLaunchKernel(func, gridDim, blockDim, args,
 		sharedMem, stream);
 	if (eret != cudaSuccess)

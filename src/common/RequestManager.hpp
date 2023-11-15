@@ -1,7 +1,7 @@
 /*
 	This file is part of Task-Aware CUDA and is licensed under the terms contained in the COPYING and COPYING.LESSER files.
 
-	Copyright (C) 2021 Barcelona Supercomputing Center (BSC)
+	Copyright (C) 2021-2023 Barcelona Supercomputing Center (BSC)
 */
 
 #ifndef REQUEST_MANAGER_HPP
@@ -14,6 +14,7 @@
 
 #include <cassert>
 
+#include "TaskingModel.hpp"
 #include "util/ErrorHandler.hpp"
 
 
@@ -30,14 +31,14 @@ struct Request {
 	//! The stream where the operation was posted
     cudaStream_t _stream;
 
-	//! The event counter of the calling task
-	void *_eventCounter;
+	//! Calling task
+	TaskingModel::task_handle_t _taskHandle;
 
 	//! Support for Boost intrusive lists
 	links_t _listLinks;
 
 	inline Request() :
-		_eventCounter(nullptr)
+		_taskHandle(nullptr)
 	{
 	}
 };
@@ -95,11 +96,11 @@ public:
 		assert(request != nullptr);
 
 		cudaError_t eret;
-		eret = cudaEventCreate(&request->_event); 
+		eret = cudaEventCreate(&request->_event);
 		if (eret != cudaSuccess) {
 			ErrorHandler::fail("Failed in cudaEventCreate: ", eret);
 		}
-        
+
 		eret = cudaEventRecord(request->_event, stream);
 		if (eret != cudaSuccess) {
 			ErrorHandler::fail("Failed in cudaEventRecord: ", eret);
@@ -107,12 +108,12 @@ public:
 
 		// Bind the request to the calling task if needed
 		if (bind) {
-			void *counter = TaskingModel::getCurrentEventCounter();
-			assert(counter != nullptr);
+			TaskingModel::task_handle_t task = TaskingModel::getCurrentTask();
+			assert(task != nullptr);
 
-			request->_eventCounter = counter;
+			request->_taskHandle = task;
 
-			TaskingModel::increaseCurrentTaskEventCounter(counter, 1);
+			TaskingModel::increaseCurrentTaskEvents(task, 1);
 
 			RequestManager::addRequest(request);
 		}
@@ -124,12 +125,12 @@ public:
 		assert(request != nullptr);
 		assert(request->_eventCounter == nullptr);
 
-		void *counter = TaskingModel::getCurrentEventCounter();
-		assert(counter != nullptr);
+		TaskingModel::task_handle_t task = TaskingModel::getCurrentTask();
+		assert(task != nullptr);
 
-		request->_eventCounter = counter;
+		request->_taskHandle = task;
 
-		TaskingModel::increaseCurrentTaskEventCounter(counter, 1);
+		TaskingModel::increaseCurrentTaskEvents(task, 1);
 
 		addRequest(request);
 	}
@@ -139,18 +140,18 @@ public:
 		assert(count > 0);
 		assert(requests != nullptr);
 
-		void *counter = TaskingModel::getCurrentEventCounter();
+		TaskingModel::task_handle_t task = TaskingModel::getCurrentTask();
 		assert(counter != nullptr);
 
 		size_t nactive = 0;
 		for (size_t r = 0; r < count; ++r) {
 			if (requests[r] != nullptr) {
-				assert(requests[r]->_eventCounter == nullptr);
-				requests[r]->_eventCounter = counter;
+				assert(requests[r]->_taskHandle == nullptr);
+				requests[r]->_taskHandle = task;
 				++nactive;
 			}
 		}
-		TaskingModel::increaseCurrentTaskEventCounter(counter, nactive);
+		TaskingModel::increaseCurrentTaskEvents(task, nactive);
 
 		addRequests(count, requests);
 	}
@@ -165,19 +166,19 @@ public:
 				}
 			);
 		}
-    
+
 		cudaError_t eret;
 
 		auto it = _pendingRequests.begin();
 		while (it != _pendingRequests.end()) {
 			Request &request = *it;
-                
+
 			eret = cudaEventQuery(request._event);
 			if (eret != cudaSuccess && eret != cudaErrorNotReady) {
 				ErrorHandler::fail("Failed in cudaEventQuery: ", eret);
 			} else if (eret == cudaSuccess) {
-                assert(request._eventCounter != nullptr);
-				TaskingModel::decreaseTaskEventCounter(request._eventCounter, 1);
+                assert(request._taskHandle != nullptr);
+				TaskingModel::decreaseTaskEvents(request._taskHandle, 1);
 
 				eret = cudaEventDestroy(request._event);
 				if (eret != cudaSuccess) {

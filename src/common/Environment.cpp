@@ -13,7 +13,7 @@
 
 namespace tacuda {
 
-TaskingModel::polling_handle_t Environment::_pollingHandle;
+TaskingModel::PollingInstance *Environment::_pollingInstance;
 
 EnvironmentVariable<uint64_t> Environment::_pollingFrequency("TACUDA_POLLING_FREQUENCY", 500);
 
