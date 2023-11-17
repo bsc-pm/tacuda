@@ -12,7 +12,6 @@
 #include "RequestManager.hpp"
 #include "StreamPool.hpp"
 
-
 namespace tacuda {
 
 //! Class that represents the environment
@@ -20,7 +19,7 @@ class Environment {
 private:
 	//! The handle to the polling instance that periodically checks
 	//! the completion of the TACUDA requests and events
-	static TaskingModel::polling_handle_t _pollingHandle;
+	static TaskingModel::PollingInstance *_pollingInstance;
 
 	//! Determine the polling frequency when the TACUDA polling is
 	//! implemented with tasks that are paused periodically. That is
@@ -45,8 +44,8 @@ public:
 
 		Allocator<Request>::initialize();
 
-		assert(!_pollingHandle);
-		_pollingHandle = TaskingModel::registerPolling("TACUDA", Environment::polling, nullptr, _pollingFrequency);
+		assert(!_pollingInstance);
+		_pollingInstance = TaskingModel::registerPolling("TACUDA", Environment::polling, nullptr, _pollingFrequency);
 	}
 
 	//! \brief Finalize the environment of TACUDA
@@ -55,7 +54,7 @@ public:
 	//! the program and after any CUDA function
 	static void finalize()
 	{
-		TaskingModel::unregisterPolling(_pollingHandle);
+		TaskingModel::unregisterPolling(_pollingInstance);
 
 		Allocator<Request>::finalize();
 	}

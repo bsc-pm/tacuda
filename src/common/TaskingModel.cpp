@@ -1,66 +1,71 @@
 /*
 	This file is part of Task-Aware CUDA and is licensed under the terms contained in the COPYING and COPYING.LESSER files.
 
-	Copyright (C) 2021 Barcelona Supercomputing Center (BSC)
+	Copyright (C) 2015-2023 Barcelona Supercomputing Center (BSC)
 */
-
-#include <string>
 
 #include "Symbol.hpp"
 #include "TaskingModel.hpp"
 #include "util/ErrorHandler.hpp"
 
-
 namespace tacuda {
 
 void TaskingModel::initialize()
 {
-	// Load the functions required by polling tasks
-	_waitFor = (wait_for_t *) Symbol::load(_waitForName);
-	_spawnFunction = (spawn_function_t *) Symbol::load(_spawnFunctionName);
+	_alpi_version_check.load();
+	_alpi_version_get.load();
+	_alpi_task_self.load();
+	_alpi_task_spawn.load();
+	_alpi_task_waitfor_ns.load();
+	_alpi_task_events_increase.load();
+	_alpi_task_events_decrease.load();
+	_alpi_cpu_count.load();
+	_alpi_cpu_logical_id.load();
 
-	// Load the task events API functions
-	_getCurrentEventCounter = (get_current_event_counter_t *)
-		Symbol::load(_getCurrentEventCounterName);
-	_increaseCurrentTaskEventCounter = (increase_current_task_event_counter_t *)
-		Symbol::load(_increaseCurrentTaskEventCounterName);
-	_decreaseTaskEventCounter = (decrease_task_event_counter_t *)
-		Symbol::load(_decreaseTaskEventCounterName);
+	int expected[2] = { ALPI_VERSION_MAJOR, ALPI_VERSION_MINOR };
+	int provided[2];
 
-	_notifyTaskEventCounterAPI = (notify_task_event_counter_api_t *)
-		Symbol::load(_notifyTaskEventCounterAPIName, false);
+	if (int err = _alpi_version_get(&provided[0], &provided[1]))
+		ErrorHandler::fail("Failed alpi_version_get: ", getError(err));
 
-	_getTotalNumCPUs = (get_total_num_cpus_t *)
-		Symbol::load(_getTotalNumCPUsName);
-	_getCurrentVirtualCPU = (get_current_virtual_cpu_t *)
-		Symbol::load(_getCurrentVirtualCPUName);
-
-	// Notify the tasking runtime that the event counters
-	// API may be used during the execution. This function
-	// is not required so call it only if defined
-	if (_notifyTaskEventCounterAPI) {
-		(*_notifyTaskEventCounterAPI)();
-	}
+	int err = _alpi_version_check(expected[0], expected[1]);
+	if (err == ALPI_ERR_VERSION)
+		ErrorHandler::fail("Incompatible ALPI tasking interface versions:\n",
+			"\tExpected: ", expected[0], ".", expected[1], "\n",
+			"\tProvided: ", provided[0], ".", provided[1]);
+	else if (err)
+		ErrorHandler::fail("Failed alpi_version_check: ", getError(err));
 }
 
-//! The pointers to the tasking model API functions
-get_current_event_counter_t *TaskingModel::_getCurrentEventCounter = nullptr;
-increase_current_task_event_counter_t *TaskingModel::_increaseCurrentTaskEventCounter = nullptr;
-decrease_task_event_counter_t *TaskingModel::_decreaseTaskEventCounter = nullptr;
-notify_task_event_counter_api_t *TaskingModel::_notifyTaskEventCounterAPI = nullptr;
-spawn_function_t *TaskingModel::_spawnFunction = nullptr;
-wait_for_t *TaskingModel::_waitFor = nullptr;
-get_total_num_cpus_t *TaskingModel::_getTotalNumCPUs = nullptr;
-get_current_virtual_cpu_t *TaskingModel::_getCurrentVirtualCPU = nullptr;
+Symbol<TaskingModel::alpi_error_string_t>
+TaskingModel::_alpi_error_string("alpi_error_string");
 
-//! Actual names of the tasking model API functions
-const std::string TaskingModel::_getCurrentEventCounterName("nanos6_get_current_event_counter");
-const std::string TaskingModel::_increaseCurrentTaskEventCounterName("nanos6_increase_current_task_event_counter");
-const std::string TaskingModel::_decreaseTaskEventCounterName("nanos6_decrease_task_event_counter");
-const std::string TaskingModel::_notifyTaskEventCounterAPIName("nanos6_notify_task_event_counter_api");
-const std::string TaskingModel::_spawnFunctionName("nanos6_spawn_function");
-const std::string TaskingModel::_waitForName("nanos6_wait_for");
-const std::string TaskingModel::_getTotalNumCPUsName("nanos6_get_total_num_cpus");
-const std::string TaskingModel::_getCurrentVirtualCPUName("nanos6_get_current_virtual_cpu");
+Symbol<TaskingModel::alpi_version_check_t>
+TaskingModel::_alpi_version_check("alpi_version_check");
+
+Symbol<TaskingModel::alpi_version_get_t>
+TaskingModel::_alpi_version_get("alpi_version_get");
+
+Symbol<TaskingModel::alpi_task_self_t>
+TaskingModel::_alpi_task_self("alpi_task_self");
+
+Symbol<TaskingModel::alpi_task_events_increase_t>
+TaskingModel::_alpi_task_events_increase("alpi_task_events_increase");
+
+Symbol<TaskingModel::alpi_task_events_decrease_t>
+TaskingModel::_alpi_task_events_decrease("alpi_task_events_decrease");
+
+Symbol<TaskingModel::alpi_task_waitfor_ns_t>
+TaskingModel::_alpi_task_waitfor_ns("alpi_task_waitfor_ns");
+
+Symbol<TaskingModel::alpi_task_spawn_t>
+TaskingModel::_alpi_task_spawn("alpi_task_spawn");
+
+Symbol<TaskingModel::alpi_cpu_count_t>
+TaskingModel::_alpi_cpu_count("alpi_cpu_count");
+
+Symbol<TaskingModel::alpi_cpu_logical_id_t>
+TaskingModel::_alpi_cpu_logical_id("alpi_cpu_logical_id");
+
 
 } // namespace tacuda
