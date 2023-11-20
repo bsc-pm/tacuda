@@ -30,12 +30,12 @@ public:
 		std::string _name;
 		polling_function_t _function;
 		void *_args;
-		uint64_t _pollingFrequency;
+		uint64_t _frequency;
 		std::atomic<bool> _mustFinish;
 		std::atomic<bool> _finished;
 
-		PollingInstance(const std::string &name, polling_function_t function, void *args, uint64_t pollingFrequency) :
-			_name(name), _function(function), _args(args), _pollingFrequency(pollingFrequency),
+		PollingInstance(const std::string &name, polling_function_t function, void *args, uint64_t frequency) :
+			_name(name), _function(function), _args(args), _frequency(frequency),
 			_mustFinish(false), _finished(false)
 		{
 		}
@@ -79,6 +79,8 @@ public:
 	//! \param name The name of the polling instance
 	//! \param function The function to be called periodically
 	//! \param args The arguments of the function
+	//! \param frequency The frequency in microseconds at which to call
+	//!                  the function
 	//!
 	//! \returns A polling handle to unregister the instance once
 	//!          the polling should finish
@@ -86,9 +88,9 @@ public:
 		const std::string &name,
 		polling_function_t function,
 		void *args,
-		uint64_t pollingFrequency
+		uint64_t frequency
 	) {
-		PollingInstance *instance = new PollingInstance(name, function, args, pollingFrequency);
+		PollingInstance *instance = new PollingInstance(name, function, args, frequency);
 		assert(instance != nullptr);
 
 		// Spawn a task that will do the periodic polling
@@ -204,7 +206,7 @@ private:
 			instance->_function(instance->_args);
 
 			// Pause the polling task for some microseconds
-			if (int err = _alpi_task_waitfor_ns(instance->_pollingFrequency * 1000, nullptr))
+			if (int err = _alpi_task_waitfor_ns(instance->_frequency * 1000, nullptr))
 				ErrorHandler::fail("Failed task_waitfor_ns: ", getError(err));
 		}
 	}

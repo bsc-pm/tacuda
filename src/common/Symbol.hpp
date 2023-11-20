@@ -44,22 +44,15 @@ public:
 	}
 
 	//! \brief Load the symbol if not already loaded
-	//!
-	//! \param attr The attribute to load the symbol
-	//! \param mandatory Whether the symbol is mandatory
-	bool load()
+	void load()
 	{
 		// Do nothing if it was already loaded
 		if (_symbol != nullptr)
-			return true;
+			return;
 
-		void *handle = RTLD_DEFAULT;
-
-		_symbol = (SymbolTy *) dlsym(handle, _name);
+		_symbol = (SymbolTy *) dlsym(RTLD_DEFAULT, _name);
 		if (_symbol == nullptr)
 			ErrorHandler::fail("Could not find symbol ", _name);
-
-		return (_symbol != nullptr);
 	}
 
 	//! \brief Indicate whether the symbol is loaded
