@@ -40,6 +40,18 @@ struct Request {
 	inline Request() :
 		_taskHandle(nullptr)
 	{
+		cudaError_t eret = cudaEventCreateWithFlags(&_event, cudaEventDisableTiming);
+		if (eret != cudaSuccess) {
+			ErrorHandler::fail("Failed in cudaEventCreate: ", eret);
+		}
+	}
+
+	inline ~Request()
+	{
+		cudaError_t eret = cudaEventDestroy(_event);
+		if (eret != cudaSuccess) {
+			ErrorHandler::fail("Failed in cudaEventCreate: ", eret);
+		}
 	}
 };
 
@@ -96,10 +108,6 @@ public:
 		assert(request != nullptr);
 
 		cudaError_t eret;
-		eret = cudaEventCreate(&request->_event);
-		if (eret != cudaSuccess) {
-			ErrorHandler::fail("Failed in cudaEventCreate: ", eret);
-		}
 
 		eret = cudaEventRecord(request->_event, stream);
 		if (eret != cudaSuccess) {
@@ -179,11 +187,6 @@ public:
 			} else if (eret == cudaSuccess) {
                 assert(request._taskHandle != nullptr);
 				TaskingModel::decreaseTaskEvents(request._taskHandle, 1);
-
-				eret = cudaEventDestroy(request._event);
-				if (eret != cudaSuccess) {
-					ErrorHandler::fail("Failed in cudaEventDestroy: ", eret);
-				}
 
 				Allocator<Request>::free(&request);
 
