@@ -23,7 +23,10 @@ namespace tacuda {
 class StreamPool {
 private:
 	//! Array of streams
-	static std::vector<cudaStream_t> _streams;
+	static std::vector<std::vector<cudaStream_t>> _streams;
+
+	//! Array of Stream Selectors
+	static std::vector<int> _stream_selectors;
 
 	//! Context of the streams
 	static CUcontext _context;
@@ -36,15 +39,25 @@ public:
 	{
 		assert(nstreams > 0);
 
+		// TODO: nstreams -> #CPUs; num_streams -> parameter (nstreams)
+		const int num_streams = 4;
+
 		CUresult eret = cuCtxGetCurrent(&_context);
 		if (eret != CUDA_SUCCESS)
 			ErrorHandler::fail("Failed in cuCtxGetCurrent: ", eret);
 
 		_streams.resize(nstreams);
+		_stream_selectors.resize(nstreams);
+
 		for (size_t s = 0; s < nstreams; ++s) {
-			cudaError_t eret2 = cudaStreamCreate(&_streams[s]);
-			if (eret2 != cudaSuccess)
-				ErrorHandler::fail("Failed in cudaStreamCreate: ", eret2);
+			_streams[s].resize(num_streams);
+			_stream_selectors[s] = 0;
+
+			for (size_t ss = 0; ss < num_streams; ++ss) {
+				cudaError_t eret2 = cudaStreamCreate(&_streams[s][ss]);
+				if (eret2 != cudaSuccess)
+					ErrorHandler::fail("Failed in cudaStreamCreate: ", eret2);
+			}
 		}
 	}
 
@@ -52,9 +65,11 @@ public:
 	static inline void finalize()
 	{
 		for (size_t s = 0; s < _streams.size(); ++s) {
-			cudaError_t eret = cudaStreamDestroy(_streams[s]);
-			if (eret != cudaSuccess)
-				ErrorHandler::fail("Failed in cudaStreamDestroy: ", eret);
+			for (size_t ss = 0; s < _streams[s].size(); ++ss) {
+				cudaError_t eret = cudaStreamDestroy(_streams[s][ss]);
+				if (eret != cudaSuccess)
+					ErrorHandler::fail("Failed in cudaStreamDestroy: ", eret);
+			}
 		}
 	}
 
@@ -69,7 +84,8 @@ public:
 		if (eret != CUDA_SUCCESS)
 			ErrorHandler::fail("Failed in cuCtxSetCurrent: ", eret);
 
-		return _streams[streamId];
+		int stream = ((_stream_selectors[streamId]++) % _streams[streamId].size());
+		return _streams[streamId][stream];
 	}
 };
 

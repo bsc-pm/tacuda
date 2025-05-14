@@ -23,7 +23,8 @@ RequestManager::add_queue_t RequestManager::_addQueue;
 SpinLock RequestManager::_addQueueLock;
 RequestManager::list_t RequestManager::_pendingRequests;
 
-std::vector<cudaStream_t> StreamPool::_streams;
+std::vector<std::vector<cudaStream_t>> StreamPool::_streams;
+std::vector<int> StreamPool::_stream_selectors;
 CUcontext StreamPool::_context;
 
 } // namespace tacuda

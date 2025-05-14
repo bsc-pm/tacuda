@@ -21,6 +21,7 @@ extern "C" {
 cudaError_t
 tacudaCreateStreams(size_t count)
 {
+
 	if (count == TACUDA_STREAMS_AUTO)
 		count = TaskingModel::getNumCPUs();
 	assert(count > 0);
