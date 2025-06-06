@@ -1,7 +1,7 @@
 /*
 	This file is part of Task-Aware CUDA and is licensed under the terms contained in the COPYING and COPYING.LESSER files.
 
-	Copyright (C) 2021 Barcelona Supercomputing Center (BSC)
+	Copyright (C) 2021-2025 Barcelona Supercomputing Center (BSC)
 */
 
 #ifndef STREAM_POOL_HPP
@@ -39,21 +39,20 @@ public:
 	{
 		assert(nstreams > 0);
 
-		// TODO: nstreams -> #CPUs; num_streams -> parameter (nstreams)
-		const int num_streams = 4;
+		const size_t totalStreams = nstreams * TaskingModel::getNumCPUs();
 
 		CUresult eret = cuCtxGetCurrent(&_context);
 		if (eret != CUDA_SUCCESS)
 			ErrorHandler::fail("Failed in cuCtxGetCurrent: ", eret);
 
-		_streams.resize(nstreams);
-		_stream_selectors.resize(nstreams);
+		_streams.resize(totalStreams);
+		_stream_selectors.resize(totalStreams);
 
-		for (size_t s = 0; s < nstreams; ++s) {
-			_streams[s].resize(num_streams);
+		for (size_t s = 0; s < totalStreams; ++s) {
+			_streams[s].resize(nstreams);
 			_stream_selectors[s] = 0;
 
-			for (size_t ss = 0; ss < num_streams; ++ss) {
+			for (size_t ss = 0; ss < nstreams; ++ss) {
 				cudaError_t eret2 = cudaStreamCreate(&_streams[s][ss]);
 				if (eret2 != cudaSuccess)
 					ErrorHandler::fail("Failed in cudaStreamCreate: ", eret2);
