@@ -40,7 +40,6 @@ public:
 		assert(nstreams > 0);
 
 		const size_t ncpus = TaskingModel::getNumCPUs();
-		const size_t totalStreams = nstreams * ncpus;
 
 		CUresult eret = cuCtxGetCurrent(&_context);
 		if (eret != CUDA_SUCCESS)
@@ -65,7 +64,7 @@ public:
 	static inline void finalize()
 	{
 		for (size_t s = 0; s < _streams.size(); ++s) {
-			for (size_t ss = 0; s < _streams[s].size(); ++ss) {
+			for (size_t ss = 0; ss < _streams[s].size(); ++ss) {
 				cudaError_t eret = cudaStreamDestroy(_streams[s][ss]);
 				if (eret != cudaSuccess)
 					ErrorHandler::fail("Failed in cudaStreamDestroy: ", eret);
