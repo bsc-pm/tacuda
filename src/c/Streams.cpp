@@ -1,7 +1,7 @@
 /*
 	This file is part of Task-Aware CUDA and is licensed under the terms contained in the COPYING and COPYING.LESSER files.
 
-	Copyright (C) 2021 Barcelona Supercomputing Center (BSC)
+	Copyright (C) 2021-2025 Barcelona Supercomputing Center (BSC)
 */
 
 #include <cuda_runtime.h>
@@ -22,8 +22,7 @@ cudaError_t
 tacudaCreateStreams(size_t count)
 {
 	if (count == TACUDA_STREAMS_AUTO)
-		count = TaskingModel::getNumCPUs();
-	assert(count > 0);
+		count = 1;
 
 	StreamPool::initialize(count);
 

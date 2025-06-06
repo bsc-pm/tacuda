@@ -1,7 +1,7 @@
 /*
 	This file is part of Task-Aware CUDA and is licensed under the terms contained in the COPYING and COPYING.LESSER files.
 
-	Copyright (C) 2021 Barcelona Supercomputing Center (BSC)
+	Copyright (C) 2021-2025 Barcelona Supercomputing Center (BSC)
 */
 
 #ifndef STREAM_POOL_HPP
@@ -23,7 +23,10 @@ namespace tacuda {
 class StreamPool {
 private:
 	//! Array of streams
-	static std::vector<cudaStream_t> _streams;
+	static std::vector<std::vector<cudaStream_t>> _streams;
+
+	//! Array of Stream Selectors
+	static std::vector<int> _stream_selectors;
 
 	//! Context of the streams
 	static CUcontext _context;
@@ -36,15 +39,24 @@ public:
 	{
 		assert(nstreams > 0);
 
+		const size_t ncpus = TaskingModel::getNumCPUs();
+
 		CUresult eret = cuCtxGetCurrent(&_context);
 		if (eret != CUDA_SUCCESS)
 			ErrorHandler::fail("Failed in cuCtxGetCurrent: ", eret);
 
-		_streams.resize(nstreams);
-		for (size_t s = 0; s < nstreams; ++s) {
-			cudaError_t eret2 = cudaStreamCreate(&_streams[s]);
-			if (eret2 != cudaSuccess)
-				ErrorHandler::fail("Failed in cudaStreamCreate: ", eret2);
+		_streams.resize(ncpus);
+		_stream_selectors.resize(ncpus);
+
+		for (size_t s = 0; s < ncpus; ++s) {
+			_streams[s].resize(nstreams);
+			_stream_selectors[s] = 0;
+
+			for (size_t ss = 0; ss < nstreams; ++ss) {
+				cudaError_t eret2 = cudaStreamCreate(&_streams[s][ss]);
+				if (eret2 != cudaSuccess)
+					ErrorHandler::fail("Failed in cudaStreamCreate: ", eret2);
+			}
 		}
 	}
 
@@ -52,9 +64,11 @@ public:
 	static inline void finalize()
 	{
 		for (size_t s = 0; s < _streams.size(); ++s) {
-			cudaError_t eret = cudaStreamDestroy(_streams[s]);
-			if (eret != cudaSuccess)
-				ErrorHandler::fail("Failed in cudaStreamDestroy: ", eret);
+			for (size_t ss = 0; ss < _streams[s].size(); ++ss) {
+				cudaError_t eret = cudaStreamDestroy(_streams[s][ss]);
+				if (eret != cudaSuccess)
+					ErrorHandler::fail("Failed in cudaStreamDestroy: ", eret);
+			}
 		}
 	}
 
@@ -69,7 +83,8 @@ public:
 		if (eret != CUDA_SUCCESS)
 			ErrorHandler::fail("Failed in cuCtxSetCurrent: ", eret);
 
-		return _streams[streamId];
+		int stream = ((_stream_selectors[streamId]++) % _streams[streamId].size());
+		return _streams[streamId][stream];
 	}
 };
 
