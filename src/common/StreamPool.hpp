@@ -39,16 +39,17 @@ public:
 	{
 		assert(nstreams > 0);
 
-		const size_t totalStreams = nstreams * TaskingModel::getNumCPUs();
+		const size_t ncpus = TaskingModel::getNumCPUs();
+		const size_t totalStreams = nstreams * ncpus;
 
 		CUresult eret = cuCtxGetCurrent(&_context);
 		if (eret != CUDA_SUCCESS)
 			ErrorHandler::fail("Failed in cuCtxGetCurrent: ", eret);
 
-		_streams.resize(totalStreams);
-		_stream_selectors.resize(totalStreams);
+		_streams.resize(ncpus);
+		_stream_selectors.resize(ncpus);
 
-		for (size_t s = 0; s < totalStreams; ++s) {
+		for (size_t s = 0; s < ncpus; ++s) {
 			_streams[s].resize(nstreams);
 			_stream_selectors[s] = 0;
 
