@@ -39,6 +39,7 @@ public:
 
 		new (_queue) queue_t();
 		for (int i = 0; i < NUM_ENTRIES; ++i) {
+			new (&_objects[i]) T();
 			_queue->push(&_objects[i]);
 		}
 	}
@@ -46,6 +47,10 @@ public:
 	static inline void finalize()
 	{
 		assert(initialized());
+
+		for (int i = 0; i < NUM_ENTRIES; ++i) {
+			(&_objects[i])->~T();
+		}
 
 		_queue->~queue_t();
 		std::free(_queue);
@@ -68,7 +73,6 @@ public:
 		}
 		assert(object != nullptr);
 
-		new (object) T(std::forward<Args>(args)...);
 		return object;
 	}
 
@@ -77,7 +81,6 @@ public:
 		assert(initialized());
 		assert(object != nullptr);
 
-		object->~T();
 		bool pushed __attribute__((unused));
 		pushed = _queue->push(object);
 		assert(pushed);
